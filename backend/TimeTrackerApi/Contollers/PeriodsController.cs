@@ -8,11 +8,21 @@ using System.Security.Claims;
 [Authorize]
 public class PeriodsController : ControllerBase
 {
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue("sub")!);
+    private Guid GetUserId()
+    {
+        var sub = User.FindFirstValue("sub")
+        ?? User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        Console.WriteLine($"sub claim value: {sub}");
+        return Guid.Parse(sub!);
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetPeriods()
     {
+        Console.WriteLine("=== Get Periods Called===");
+        var userId = GetUserId();
+        Console.WriteLine($"Getting periods for user: {userId}");
+
         await using var conn = Db.CreateConnection();
         await conn.OpenAsync();
 
@@ -40,6 +50,7 @@ public class PeriodsController : ControllerBase
                 totalHours = reader["total_hours"]
             });
         }
+        Console.WriteLine($"Returning {results.Count} periods");
         return Ok(results);
     }
 

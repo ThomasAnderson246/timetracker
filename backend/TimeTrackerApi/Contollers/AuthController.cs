@@ -21,23 +21,24 @@ public class AuthContoller : ControllerBase
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         using var http = new HttpClient();
-        var response = await http.GetAsync($"https://oauth2.googleapis.com/tokeninfo?id_token={request.IdToken}");
+        var response = await http.GetAsync(
+    $"https://www.googleapis.com/oauth2/v3/userinfo?access_token={request.idToken}");
         if (!response.IsSuccessStatusCode)
             return Unauthorized("Invalid Google token.");
 
-        var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+
+        Console.WriteLine($"Payload received, sub: {payload?["sub"]}");
+
 
         if (payload is null)
             return Unauthorized("Could not read payload.");
 
-        // This verifies that this token was issued for the time tracker app
-        var expectedClientId = _config["Google:ClientId"];
-        if (payload["aud"] != expectedClientId)
-            return Unauthorized("Token not intended for this usage.");
+        var googleId = payload["sub"].ToString()!;
+        var email = payload["email"].ToString()!;
+        var name = payload.ContainsKey("name") ? payload["name"].ToString()! : "";
 
-        var googleId = payload["sub"];
-        var email = payload["email"];
-        var name = payload.GetValueOrDefault("name", "");
+
 
         var userId = await UpsertUser(googleId, email, name);
 
@@ -90,4 +91,4 @@ public class AuthContoller : ControllerBase
     }
 }
 
-public record GoogleLoginRequest(string IdToken);
+public record GoogleLoginRequest(string idToken);
