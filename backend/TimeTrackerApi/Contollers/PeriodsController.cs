@@ -4,7 +4,7 @@ using Npgsql;
 using System.Security.Claims;
 
 [ApiController]
-[Route("periods")]
+[Route("period")]
 [Authorize]
 public class PeriodsController : ControllerBase
 {

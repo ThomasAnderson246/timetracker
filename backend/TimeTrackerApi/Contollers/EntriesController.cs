@@ -8,9 +8,19 @@ using System.Security.Claims;
 [Authorize]
 public class EntriesController : ControllerBase
 {
-    private Guid GetUserId() => Guid.Parse(User.FindFirstValue("sub")!);
+    private Guid GetUserId()
+    {
+        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
 
-    [HttpGet("/periods/{periodId}/entries")]
+        if (string.IsNullOrEmpty(sub))
+        {
+            throw new Exception("User ID claim not found in valid JWT. Check token.");
+        }
+
+        return Guid.Parse(sub);
+    }
+
+    [HttpGet("/period/{periodId}/entries")]
     public async Task<IActionResult> GetEntries(Guid periodId)
     {
         await using var conn = Db.CreateConnection();
